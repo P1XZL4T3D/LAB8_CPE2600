@@ -6,21 +6,16 @@
 ****************************************************************/ 
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 #include "vector.h"
 #include "vectorcalc.h"
 
 int main(int argc, char *argv[]) {
 
-    
+    Vector vector_memory[10]; // Array to hold up to 10 vectors
     char input[1000]; // Buffer for user input
-    
 
-    Vector *vector_memory = NULL; // Array to hold up to 10 vectors
-
-    static int vector_count = 0; 
-    int capacity = 0;
+    static int vector_count = 0; // Counter for the number of vectors created
 
     bool running = true; // Flag to control the main loop
 
@@ -53,7 +48,6 @@ int main(int argc, char *argv[]) {
         char resultName[100];
         char leftName[100];
         char rightName[100];
-        char filename[250];
 
         // Remove newline
         input[strcspn(input, "\n")] = '\0';
@@ -72,18 +66,10 @@ int main(int argc, char *argv[]) {
         } else if(strcmp(input, "list") == 0) { //List Command
             list_vectors(vector_memory, vector_count);
         } else if(strcmp(input, "clear") == 0) { // Clear command
-               free(vector_memory);
-
-                vector_memory = NULL;
-                vector_count = 0;   
-                capacity = 0;
-        } else if(sscanf(input, "load %255s", filename) == 1){
-            load_vectors(filename,  &vector_memory, &vector_count, &capacity);
-        } else if(sscanf(input, "save %255s", filename) == 1) {
-            save_vectors(filename, vector_memory, vector_count);
+            vector_count = 0;
         } else if(sscanf(input, "%s = %lf %lf %lf", name, &x, &y, &z) == 4) { //Vector creation command
                 Vector v = create_vector(name, x, y, z);
-                add_vector(&vector_memory, &vector_count, &capacity, v);
+                add_vector(vector_memory, &vector_count, v);
 
                 display(v);
                 continue;
@@ -100,7 +86,9 @@ int main(int argc, char *argv[]) {
 
                 strcpy(result.name, resultName);
 
-                add_vector(&vector_memory, &vector_count, &capacity, result);
+                add_vector(vector_memory,
+                   &vector_count,
+                   result);
 
                 display(result);
             }
@@ -130,7 +118,7 @@ int main(int argc, char *argv[]) {
 
                 strcpy(result.name, resultName);
 
-                add_vector(&vector_memory, &vector_count, &capacity, result);
+                add_vector(vector_memory, &vector_count, result);
                 display(result);
             }
         } else if(sscanf(input, "%s - %s", leftName, rightName) == 2) { //Vector subtraction command without assignment
@@ -171,13 +159,17 @@ int main(int argc, char *argv[]) {
 
                 strcpy(result.name, resultName);
 
-                add_vector(&vector_memory, &vector_count, &capacity, result);
+                add_vector(vector_memory, &vector_count, result);
                 display(result);
             }
         } else if(sscanf(input, "%s x %s", leftName, rightName) == 2) { //Cross product command without assignment
-            int leftIndex = find_vector(vector_memory, vector_count, leftName);
+            int leftIndex = find_vector(vector_memory,
+                                        vector_count,
+                                        leftName);
 
-            int rightIndex = find_vector(vector_memory, vector_count, rightName);
+            int rightIndex = find_vector(vector_memory,
+                                        vector_count,
+                                        rightName);
 
             if(leftIndex == -1 || rightIndex == -1) {
                 printf("Error: Vector not found.\n");
@@ -206,7 +198,7 @@ int main(int argc, char *argv[]) {
 
                 strcpy(result.name, resultName);
 
-                add_vector(&vector_memory, &vector_count, &capacity, result);
+                add_vector(vector_memory, &vector_count, result);
 
                 display(result);
             }
@@ -242,8 +234,7 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    //Exit and free memory
-    free(vector_memory);
+    //Exit Code
     return 0;
 }
 
@@ -277,33 +268,22 @@ int find_vector(Vector *vector_memory, int size, char *name) {
     return -1;
 }
 
-void add_vector(Vector **vector_memory, int *size, int *capacity, Vector v){
-    int index = find_vector(*vector_memory, *size, v.name);
+void add_vector(Vector *vector_memory, int *size, Vector v) {
 
+    int index = find_vector(vector_memory, *size, v.name);
+    
     if(index != -1) {
-        (*vector_memory)[index] = v;
+        vector_memory[index] = v;
         return;
     }
 
-    if(*size >= *capacity) {
-        if(*capacity == 0) {
-            *capacity = 10;
-        } else {
-            *capacity *= 2;
-        } 
-
-
-        *vector_memory = realloc(*vector_memory, *capacity * sizeof(Vector));
-
-        if(*vector_memory == NULL) {
-            printf("Out of memory.\n");
-            exit(1);
-        }
+    if(*size < 10) { // Check if there's space in the array
+        vector_memory[*size] = v;
+        (*size)++;
+    } else {
+        printf("Vector memory is full. Cannot add more vectors.\n");
     }
-
-    (*vector_memory)[*size] = v;
-    (*size)++;
-}
+} 
 
 void display(Vector a) {
     printf("Vector %s = <%f, %f, %f>\n", 
@@ -311,48 +291,4 @@ void display(Vector a) {
         a.x, 
         a.y, 
         a.z);
-}
-
-void load_vectors(char *filename, Vector **vector_memory, int *vector_count, int *capacity) { 
-    FILE *fp = fopen(filename, "r");
-
-    if(fp == NULL) {
-        printf("Could not open file.\n");
-        return;
-    }
-
-    char name[100];
-    float x;
-    float y;
-    float z;
-
-    while(fscanf(fp, " %99[^,],%f,%f,%f", name, &x, &y, &z) == 4) {
-        Vector v = create_vector(name, x, y, z);
-
-        add_vector(vector_memory, vector_count, capacity, v);
-    }
-
-    fclose(fp);
-}
-
-void save_vectors(char *filename, Vector *vector_memory, int vector_count){ 
-    FILE *fp = fopen(filename, "w");
-
-    if(fp == NULL) {
-        printf("Could not open file for writing.\n");
-        return;
-    }
-
-    for(int i = 0; i < vector_count; i++) {
-        fprintf(fp,
-                "%s,%f,%f,%f\n",
-                vector_memory[i].name,
-                vector_memory[i].x,
-                vector_memory[i].y,
-                vector_memory[i].z);
-    }
-
-    fclose(fp);
-
-    printf("%d vectors saved.\n", vector_count);
 }

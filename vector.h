@@ -18,11 +18,7 @@ void list_vectors(Vector *vector_memory, int size);
 
 int find_vector(Vector *vector_memory, int size, char *name);
 
-void add_vector(Vector **vector_memory, int *size, int *capacity, Vector v);
+void add_vector(Vector *vector_memory, int *size, Vector v);
 
 void display(Vector a);
-
-void load_vectors(char *filename, Vector **vector_memory, int *vector_count, int *capacity);
-
-void save_vectors(char *filename, Vector *vector_memory, int vector_count);
 
