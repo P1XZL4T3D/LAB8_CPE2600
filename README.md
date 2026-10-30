@@ -1,7 +1,6 @@
 Vector Calculator
 Description
 The Vector Calculator is a command-line program written in C that allows users to create and manipulate 3-dimensional vectors.
-__________
 The program supports:
 
 Vector creation
@@ -21,9 +20,10 @@ gcc main.c vector.c vectorcalc.c -o vectorcalc
 Or if using a Makefile:
 
 make
+__________
 Running the Program
 Run the program:
-__________
+
 ./vectorcalc
 Display help:
 
